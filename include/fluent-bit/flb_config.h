@@ -104,6 +104,8 @@ struct flb_config {
     struct flb_cf *cf_opts;
     struct mk_list cf_parsers_list;
 
+    char* openssl_providers;
+
     flb_sds_t program_name;      /* argv[0] */
 
     /*
@@ -436,5 +438,9 @@ enum conf_type {
 
 /* json escape */
 #define FLB_CONF_UNICODE_STR_JSON_ESCAPE "json.escape_unicode"
+
+/* OpenSSL Providers */
+#define FLB_CONF_STR_OPENSSL_PROVIDERS \
+                                      "openssl.providers"
 
 #endif
