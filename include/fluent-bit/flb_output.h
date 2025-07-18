@@ -376,6 +376,7 @@ struct flb_output_instance {
     int tls_win_use_enterprise_certstore;    /* Use enterprise CertStore */
     char *tls_win_thumbprints;               /* CertStore Thumbprints (Windows) */
 # endif
+    char *tls_provider_query;            /* OpenSSL Provider Query */
 #endif
 
     /*
