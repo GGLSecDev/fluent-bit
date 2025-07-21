@@ -17,6 +17,15 @@
  *  limitations under the License.
  */
 
+ /*
+  * OPENSSL_VERSION_NUMBER has the following semantics
+  *
+  *     0x010100000L   M = major  F = fix    S = status
+  *       MMNNFFPPS    N = minor  P = patch
+  */
+#define OPENSSL_1_1_0 0x010100000L
+#define OPENSSL_3_0   0x030000000L
+
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef FLB_USE_OPENSSL_STORE
@@ -33,9 +42,11 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/opensslv.h>
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_3_0
 #include <openssl/provider.h>
 #ifdef FLB_USE_OPENSSL_STORE
 #include <openssl/store.h>
+#endif
 #endif
 #include <openssl/x509v3.h>
 
@@ -55,20 +66,14 @@
     #endif
 #endif
 
-/*
- * OPENSSL_VERSION_NUMBER has the following semantics
- *
- *     0x010100000L   M = major  F = fix    S = status
- *       MMNNFFPPS    N = minor  P = patch
- */
-#define OPENSSL_1_1_0 0x010100000L
-#define OPENSSL_3_0   0x030000000L
 
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_3_0
 #define MAX_OPENSSL_PROVIDERS 4
 struct openssl_provider_support {
     int current_provider;
     OSSL_PROVIDER* provider[MAX_OPENSSL_PROVIDERS];
 };
+#endif
 
 /* OpenSSL library context */
 struct tls_context {
@@ -83,7 +88,7 @@ struct tls_context {
     size_t allowed_thumbprints_count;
 #endif
     pthread_mutex_t mutex;
-#ifdef FLB_USE_OPENSSL_STORE
+#if defined(FLB_USE_OPENSSL_STORE) && (OPENSSL_VERSION_NUMBER >= OPENSSL_3_0)
     X509 *store_cert;
     EVP_PKEY *store_pkey;
 #endif
@@ -97,8 +102,12 @@ struct tls_session {
     struct tls_context *parent;    /* parent struct tls_context ref */
 };
 
+
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_3_0
+
 /* List of providers to load and activate for OpenSSL */
 static struct openssl_provider_support openssl_providers;
+
 
 static void openssl_providers_reset(void) 
 {
@@ -177,6 +186,8 @@ static void openssl_load_provider(const char* provider)
     return;
 }
 
+#endif
+
 static int tls_init(void)
 {
     flb_idebug("[tls] init");
@@ -191,18 +202,23 @@ static int tls_init(void)
     SSL_load_error_strings();
     SSL_library_init();
 #endif
+    
 
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_3_0
     /* Initialise the Providers Struct */
     openssl_providers.current_provider = 0;
     for (int i = 0; i < MAX_OPENSSL_PROVIDERS; i++) {
         openssl_providers.provider[i] = NULL;
     }
+#endif
 
     return 0;
 }
 
 static void tls_configure(struct flb_config* config)
 {
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_3_0
+
     int ret;
     const char* delim = ";";
     char* provider_list;
@@ -211,7 +227,6 @@ static void tls_configure(struct flb_config* config)
     if (!config) {
         return;
     }
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_3_0
 
     openssl_providers_reset(); /* Could be a reconfig - start from scratch */
 
@@ -232,7 +247,9 @@ static void tls_configure(struct flb_config* config)
 
 static void tls_cleanup(void)
 {
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_3_0
     openssl_providers_reset();
+#endif
 }
 
 static void tls_info_callback(const SSL *s, int where, int ret)
@@ -293,7 +310,7 @@ static void tls_context_destroy(void *ctx_backend)
 
     SSL_CTX_free(ctx->ctx);
 
-#ifdef FLB_USE_OPENSSL_STORE    
+#if defined(FLB_USE_OPENSSL_STORE) && (OPENSSL_VERSION_NUMBER >= OPENSSL_3_0)  
     if (ctx->store_cert != NULL) {
         X509_free(ctx->store_cert);
         ctx->store_cert = NULL;
@@ -1127,7 +1144,7 @@ static void *tls_context_create(int verify,
 
     /* crt_file */
     if (crt_file) {
-#ifdef FLB_USE_OPENSSL_STORE
+#if defined(FLB_USE_OPENSSL_STORE) && (OPENSSL_VERSION_NUMBER >= OPENSSL_3_0)
         /* Try and open this as a store item first */
         if (openssl_provider_get_item((void**)&ctx->store_cert, crt_file,
                                       provider_query, openssl_provider_get_certificate)) {
@@ -1162,7 +1179,7 @@ static void *tls_context_create(int verify,
             SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx,
                                                    (void*)key_passwd);
         }
-#ifdef FLB_USE_OPENSSL_STORE
+#if defined(FLB_USE_OPENSSL_STORE) && (OPENSSL_VERSION_NUMBER >= OPENSSL_3_0)
         /* Try and open this as a store item if we had no key password */
         else if (openssl_provider_get_item((void**)&ctx->store_pkey, key_file,
                                            provider_query, openssl_provider_get_private_key)) {
@@ -1186,7 +1203,7 @@ static void *tls_context_create(int verify,
                 flb_error("[tls] key_file '%s' %lu: %s",
                            key_file, ERR_get_error(), err_buf);
             }
-#ifdef FLB_USE_OPENSSL_STORE
+#if defined(FLB_USE_OPENSSL_STORE) && (OPENSSL_VERSION_NUMBER >= OPENSSL_3_0)
         }
 #endif
 
