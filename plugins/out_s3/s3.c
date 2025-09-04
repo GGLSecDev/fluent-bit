@@ -526,6 +526,7 @@ static int cb_s3_init(struct flb_output_instance *ins,
     struct flb_split_entry *tok;
     struct mk_list *split;
     int list_size;
+    const struct flb_tls_verifier_instance *tls_ins = NULL;
 
     ctx = flb_calloc(1, sizeof(struct flb_s3));
     if (!ctx) {
@@ -776,6 +777,7 @@ static int cb_s3_init(struct flb_output_instance *ins,
         ctx->storage_class = (char *) tmp;
     }
 
+    tls_ins = find_tls_verifier_instance(config, ins->tls_verifier);
     if (ctx->insecure == FLB_FALSE) {
         ctx->client_tls = flb_tls_create(FLB_TLS_CLIENT_MODE,
                                          ins->tls_verify,
@@ -785,8 +787,9 @@ static int cb_s3_init(struct flb_output_instance *ins,
                                          ins->tls_ca_file,
                                          ins->tls_crt_file,
                                          ins->tls_key_file,
-                                         ins->tls_key_passwd, 
-                                         ins->tls_provider_query);
+                                         ins->tls_key_passwd,
+                                         ins->tls_provider_query,
+                                         tls_ins);
         if (!ctx->client_tls) {
             flb_plg_error(ctx->ins, "Failed to create tls context");
             return -1;
@@ -802,8 +805,9 @@ static int cb_s3_init(struct flb_output_instance *ins,
                                        ins->tls_ca_file,
                                        ins->tls_crt_file,
                                        ins->tls_key_file,
-                                       ins->tls_key_passwd, 
-                                       ins->tls_provider_query);
+                                       ins->tls_key_passwd,
+                                       ins->tls_provider_query,
+                                       tls_ins);
     if (!ctx->provider_tls) {
         flb_errno();
         return -1;
@@ -837,8 +841,9 @@ static int cb_s3_init(struct flb_output_instance *ins,
                                                ins->tls_ca_file,
                                                ins->tls_crt_file,
                                                ins->tls_key_file,
-                                               ins->tls_key_passwd, 
-                                               ins->tls_provider_query);
+                                               ins->tls_key_passwd,
+                                               ins->tls_provider_query,
+                                               tls_ins);
 
         if (!ctx->sts_provider_tls) {
             flb_errno();
