@@ -47,6 +47,7 @@ struct flb_opensearch *flb_os_conf_create(struct flb_output_instance *ins,
     struct flb_uri_field *f_type = NULL;
     struct flb_upstream *upstream;
     struct flb_opensearch *ctx;
+    const struct flb_tls_verifier_instance *tls_ins = NULL;
 
     /* Allocate context */
     ctx = flb_calloc(1, sizeof(struct flb_opensearch));
@@ -248,6 +249,7 @@ struct flb_opensearch *flb_os_conf_create(struct flb_output_instance *ins,
             ctx->has_aws_auth = FLB_TRUE;
             flb_debug("[out_es] Enabled AWS Auth");
 
+            tls_ins = find_tls_verifier_instance(config, ins->tls_verifier);
             /* AWS provider needs a separate TLS instance */
             ctx->aws_tls = flb_tls_create(FLB_TLS_CLIENT_MODE,
                                           FLB_TRUE,
@@ -258,7 +260,8 @@ struct flb_opensearch *flb_os_conf_create(struct flb_output_instance *ins,
                                           ins->tls_crt_file,
                                           ins->tls_key_file,
                                           ins->tls_key_passwd,
-                                          ins->tls_provider_query);
+                                          ins->tls_provider_query,
+                                          tls_ins);
             if (!ctx->aws_tls) {
                 flb_errno();
                 flb_os_conf_destroy(ctx);
@@ -320,7 +323,8 @@ struct flb_opensearch *flb_os_conf_create(struct flb_output_instance *ins,
                                                   ins->tls_crt_file,
                                                   ins->tls_key_file,
                                                   ins->tls_key_passwd,
-                                                  ins->tls_provider_query);
+                                                  ins->tls_provider_query,
+                                                  tls_ins);
                 if (!ctx->aws_sts_tls) {
                     flb_errno();
                     flb_os_conf_destroy(ctx);
