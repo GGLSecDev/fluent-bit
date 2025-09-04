@@ -36,6 +36,43 @@ macro(REGISTER_CUSTOM_PLUGIN name)
   endif()
 endmacro()
 
+
+# REGISTER_TLS_VERIFIER_PLUGIN
+macro(REGISTER_TLS_VERIFIER_PLUGIN name)
+  string(FIND ${name} "=" pos)
+  if(pos GREATER -1)
+    string(REPLACE "=" ";" list ${name})
+    list(GET list 0 p_name)
+    list(GET list 1 p_path)
+    message(STATUS "EXTERNAL TLS_VERIFIER PLUGIN name='${p_name}' path='${p_path}'")
+  else()
+    set(p_name ${name})
+  endif()
+
+  string(TOUPPER ${p_name} NAME)
+  if(FLB_${NAME} OR p_path)
+    set(FLB_TLS_VERIFIER_PLUGINS_DECL "${FLB_TLS_VERIFIER_PLUGINS_DECL}extern struct flb_tls_verifier_plugin ${p_name}_plugin;\n")
+
+    # C code
+    set(C_CODE          "    tls_verifier = flb_malloc(sizeof(struct flb_tls_verifier_plugin));\n")
+    set(C_CODE "${C_CODE}    if (!tls_verifier) {\n")
+    set(C_CODE "${C_CODE}        flb_errno();\n")
+    set(C_CODE "${C_CODE}        return -1;\n")
+    set(C_CODE "${C_CODE}    }\n")
+    set(C_CODE "${C_CODE}    memcpy(tls_verifier, &${p_name}_plugin, sizeof(struct flb_tls_verifier_plugin));\n")
+    set(C_CODE "${C_CODE}    mk_list_add(&tls_verifier->_head, &config->tls_verifier_plugins);\n\n")
+
+    set(FLB_TLS_VERIFIER_PLUGINS_ADD "${FLB_TLS_VERIFIER_PLUGINS_ADD}${C_CODE}")
+
+    if (p_path)
+      add_subdirectory(${p_path} ${p_path})
+    else()
+      add_subdirectory(${p_name})
+    endif()
+    set(flb_plugins "${flb_plugins}flb-plugin-${p_name};")
+  endif()
+endmacro()
+
 # REGISTER_IN_PLUGIN
 macro(REGISTER_IN_PLUGIN name)
   string(FIND ${name} "=" pos)
