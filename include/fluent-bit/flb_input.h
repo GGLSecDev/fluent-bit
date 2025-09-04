@@ -458,6 +458,7 @@ struct flb_input_instance {
     char *tls_max_version;               /* Maximum protocol version of TLS */
     char *tls_ciphers;                   /* TLS ciphers */
     char *tls_provider_query;            /* OpenSSL Provider Query */
+    char *tls_verifier;                  /* TLS Verifier Plugin alias */
 
     struct mk_list *tls_config_map;
 
