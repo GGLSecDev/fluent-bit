@@ -134,6 +134,9 @@ struct flb_cf *flb_cf_create()
     /* 'custom' type plugins */
     mk_list_init(&ctx->customs);
 
+    /* 'tls verifiers' type plugins */
+    mk_list_init(&ctx->tls_verifiers);
+
     /* pipeline */
     mk_list_init(&ctx->inputs);
     mk_list_init(&ctx->filters);
@@ -193,6 +196,10 @@ static enum section_type get_section_type(char *name, int len)
     else if (strncasecmp(name, "custom", len) == 0 ||
              strncasecmp(name, "customs", len) == 0) {
         return FLB_CF_CUSTOM;
+    }
+    else if (strncasecmp(name, "tls_verifier", len) == 0 ||
+             strncasecmp(name, "tls_verifiers", len) == 0) {
+        return FLB_CF_TLS_VERIFIER;
     }
     else if (strncasecmp(name, "input", len) == 0 ||
              strncasecmp(name, "inputs", len) == 0) {
@@ -705,6 +712,9 @@ struct flb_cf_section *flb_cf_section_create(struct flb_cf *cf, char *name, int 
     else if (type == FLB_CF_CUSTOM) {
         mk_list_add(&s->_head_section, &cf->customs);
     }
+    else if (type == FLB_CF_TLS_VERIFIER) {
+        mk_list_add(&s->_head_section, &cf->tls_verifiers);
+    }
     else if (type == FLB_CF_INPUT) {
         mk_list_add(&s->_head_section, &cf->inputs);
     }
@@ -804,6 +814,8 @@ static char *section_type_str(int type)
         return "UPSTREAM_SERVERS";
     case FLB_CF_CUSTOM:
         return "CUSTOM";
+    case FLB_CF_TLS_VERIFIER:
+        return "TLS_VERIFIER";
     case FLB_CF_INPUT:
         return "INPUT";
     case FLB_CF_FILTER:
