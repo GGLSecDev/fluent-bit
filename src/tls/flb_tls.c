@@ -104,6 +104,12 @@ struct flb_config_map tls_configmap[] = {
      "OpenSSL Provider Query to use for TLS operations"
      },
 
+    {
+     FLB_CONFIG_MAP_STR, "tls.tls_verifier", NULL,
+     0, FLB_FALSE, 0,
+     "Plugin alias to use for custom TLS verification."
+    },
+
     /* EOF */
     {0}
 };
@@ -195,7 +201,8 @@ struct flb_tls *flb_tls_create(int mode,
                                const char *crt_file,
                                const char *key_file,
                                const char *key_passwd,
-                               const char *additional_data)
+                               const char *additional_data,
+                               const struct flb_tls_verifier_instance *tls_ins)
 {
     void *backend;
     struct flb_tls *tls;
@@ -207,7 +214,7 @@ struct flb_tls *flb_tls_create(int mode,
     backend = tls_context_create(verify, debug, mode,
                                  vhost, ca_path, ca_file,
                                  crt_file, key_file, key_passwd,
-                                 additional_data);
+                                 additional_data, tls_ins);
     if (!backend) {
         flb_error("[tls] could not create TLS backend");
         return NULL;
