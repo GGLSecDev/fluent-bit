@@ -39,6 +39,7 @@ struct flb_upstream_node *flb_upstream_node_create(flb_sds_t name, flb_sds_t hos
                                                    const char *tls_key_file,
                                                    const char *tls_key_passwd,
                                                    const char* tls_provider_query,
+                                                   const char *tls_verifier,
                                                    struct flb_hash_table *ht,
                                                    struct flb_config *config)
 {
@@ -47,6 +48,7 @@ struct flb_upstream_node *flb_upstream_node_create(flb_sds_t name, flb_sds_t hos
     int io_flags;
     char tmp[255];
     struct flb_upstream_node *node;
+    const struct flb_tls_verifier_instance *tls_ins;
 
     if (!host || !port) {
         return NULL;
@@ -128,6 +130,12 @@ struct flb_upstream_node *flb_upstream_node_create(flb_sds_t name, flb_sds_t hos
         flb_upstream_node_destroy(node);
         return NULL;
     }
+
+    node->tls_verifier = flb_sds_create(tls_verifier);
+    if (!node->tls_verifier) {
+        flb_upstream_node_destroy(node);
+        return NULL;
+    }
 #endif
 
     /* hash table */
@@ -136,6 +144,7 @@ struct flb_upstream_node *flb_upstream_node_create(flb_sds_t name, flb_sds_t hos
 #ifdef FLB_HAVE_TLS
     /* TLS setup */
     if (tls == FLB_TRUE) {
+        tls_ins = find_tls_verifier_instance(config, tls_verifier);
         node->tls = flb_tls_create(FLB_TLS_CLIENT_MODE,
                                    tls_verify,
                                    tls_debug,
@@ -145,7 +154,8 @@ struct flb_upstream_node *flb_upstream_node_create(flb_sds_t name, flb_sds_t hos
                                    tls_crt_file,
                                    tls_key_file,
                                    tls_key_passwd, 
-                                   tls_provider_query);
+                                   tls_provider_query,
+                                   tls_ins);
         if (!node->tls) {
             flb_error("[upstream_node] error initializing TLS context "
                       "on node '%s'", name);
@@ -224,6 +234,7 @@ void flb_upstream_node_destroy(struct flb_upstream_node *node)
     flb_sds_destroy(node->tls_key_file);
     flb_sds_destroy(node->tls_key_passwd);
     flb_sds_destroy(node->tls_provider_query);
+    flb_sds_destroy(node->tls_verifier);
     if (node->tls) {
         flb_tls_destroy(node->tls);
     }
