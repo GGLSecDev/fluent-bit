@@ -356,6 +356,8 @@ struct flb_aws_provider *flb_managed_chain_provider_create(struct flb_output_ins
     struct flb_tls *cred_tls = NULL;
     struct flb_tls *sts_tls = NULL;
 
+    const struct flb_tls_verifier_instance *tls_ins = NULL;
+
     /* Config keys */
     key_prefix_len = strlen(config_key_prefix);
     key_max_len = key_prefix_len + 12; /* max length of
@@ -375,6 +377,7 @@ struct flb_aws_provider *flb_managed_chain_provider_create(struct flb_output_ins
     strcpy(config_key_profile + key_prefix_len, "profile");
 
     /* AWS provider needs a separate TLS instance */
+    tls_ins = find_tls_verifier_instance(config, ins->tls_verifier);
     cred_tls = flb_tls_create(FLB_TLS_CLIENT_MODE,
                               FLB_TRUE,
                               ins->tls_debug,
@@ -384,7 +387,8 @@ struct flb_aws_provider *flb_managed_chain_provider_create(struct flb_output_ins
                               ins->tls_crt_file,
                               ins->tls_key_file,
                               ins->tls_key_passwd,
-                              ins->tls_provider_query);
+                              ins->tls_provider_query,
+                              tls_ins);
     if (!cred_tls) {
         flb_plg_error(ins, "Failed to create TLS instance for AWS Provider");
         flb_errno();
@@ -436,7 +440,8 @@ struct flb_aws_provider *flb_managed_chain_provider_create(struct flb_output_ins
                                  ins->tls_crt_file,
                                  ins->tls_key_file,
                                  ins->tls_key_passwd,
-                                 ins->tls_provider_query);
+                                 ins->tls_provider_query,
+                                 tls_ins);
         if (!sts_tls) {
             flb_plg_error(ins, "Failed to create TLS instance for AWS STS Credential "
                           "Provider");
