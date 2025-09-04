@@ -59,6 +59,7 @@ static int cb_firehose_init(struct flb_output_instance *ins,
     char *session_name = NULL;
     struct flb_firehose *ctx = NULL;
     int ret;
+    const struct flb_tls_verifier_instance *tls_ins = NULL;
     (void) config;
     (void) data;
 
@@ -173,6 +174,8 @@ static int cb_firehose_init(struct flb_output_instance *ins,
         ctx->role_arn = tmp;
     }
 
+    tls_ins = find_tls_verifier_instance(config, ins->tls_verifier);
+
     /* one tls instance for provider, one for cw client */
     ctx->cred_tls = flb_tls_create(FLB_TLS_CLIENT_MODE,
                                    FLB_TRUE,
@@ -183,7 +186,8 @@ static int cb_firehose_init(struct flb_output_instance *ins,
                                    ins->tls_crt_file,
                                    ins->tls_key_file,
                                    ins->tls_key_passwd,
-                                   ins->tls_provider_query);
+                                   ins->tls_provider_query,
+                                   tls_ins);
 
     if (!ctx->cred_tls) {
         flb_plg_error(ctx->ins, "Failed to create tls context");
@@ -199,7 +203,8 @@ static int cb_firehose_init(struct flb_output_instance *ins,
                                      ins->tls_crt_file,
                                      ins->tls_key_file,
                                      ins->tls_key_passwd,
-                                     ins->tls_provider_query);
+                                     ins->tls_provider_query,
+                                     tls_ins);
     if (!ctx->client_tls) {
         flb_plg_error(ctx->ins, "Failed to create tls context");
         goto error;
@@ -236,7 +241,8 @@ static int cb_firehose_init(struct flb_output_instance *ins,
                                       ins->tls_crt_file,
                                       ins->tls_key_file,
                                       ins->tls_key_passwd,
-                                      ins->tls_provider_query);
+                                      ins->tls_provider_query,
+                                      tls_ins);
         if (!ctx->sts_tls) {
             flb_errno();
             goto error;
