@@ -26,6 +26,8 @@
 
 #include <openssl/types.h>
 
+#define FLB_X509_STORE_EX_INDEX 0
+
 struct flb_tls_verifier_instance;
 
 struct flb_tls_verifier_plugin {
