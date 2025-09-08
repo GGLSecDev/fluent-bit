@@ -908,10 +908,10 @@ static void *tls_context_create(int verify,
             goto error;
         }
         ret = X509_STORE_set_ex_data(store,
-                                     0,
+                                     FLB_X509_STORE_EX_INDEX,
                                      (struct flb_tls_verifier_instance *)tls_ins);
         if (ret != 1) {
-            flb_error("[tls] Failed to set log in X509_STORE ex data");
+            flb_error("[tls] Failed to set tls_verifier_instance in X509_STORE ex data");
             goto error;
         }
     }
