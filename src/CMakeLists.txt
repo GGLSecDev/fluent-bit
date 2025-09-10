@@ -145,6 +145,7 @@ if(FLB_TLS)
   # Register the TLS interface and functions
   set(src
     ${src}
+    flb_tls_verifier.c
     "tls/flb_tls.c"
     "flb_oauth2.c"
     )

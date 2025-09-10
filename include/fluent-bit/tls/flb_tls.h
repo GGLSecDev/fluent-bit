@@ -25,6 +25,8 @@
 #include <fluent-bit/flb_info.h>
 #include <fluent-bit/flb_config.h>
 #include <fluent-bit/flb_coro.h>
+#include <fluent-bit/flb_tls_verifier.h>
+
 #include <stddef.h>
 
 #define FLB_TLS_ALPN_MAX_LENGTH 16
@@ -70,7 +72,8 @@ struct flb_tls_backend {
                              const char *, const char *,
                              const char *, const char *,
                              const char *, const char *,
-                             const char *);
+                             const char *,
+                             const struct flb_tls_verifier_instance *);
 
     /* destroy backend context */
     void (*context_destroy) (void *);
@@ -120,7 +123,8 @@ struct flb_tls *flb_tls_create(int mode,
                                const char *ca_path,
                                const char *ca_file, const char *crt_file,
                                const char *key_file, const char *key_passwd,
-                               const char *additional_data);
+                               const char *additional_data,
+                               const struct flb_tls_verifier_instance *tls_ins);
 
 int flb_tls_destroy(struct flb_tls *tls);
 

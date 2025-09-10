@@ -221,7 +221,8 @@ struct flb_oauth2 *flb_oauth2_create(struct flb_config *config,
                               NULL,      /* crt_file */
                               NULL,      /* key_file */
                               NULL,      /* key_passwd */
-                              NULL);     /* openssl_provider */
+                              NULL,      /* openssl_provider */
+                              NULL);     /* verifier */
     if (!ctx->tls) {
         flb_error("[oauth2] error initializing TLS context");
         goto error;

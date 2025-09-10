@@ -819,6 +819,12 @@ int flb_engine_start(struct flb_config *config)
         return -1;
     }
 
+    /* Initialize tls verifier plugins */
+    ret = flb_tls_verifier_init_all(config);
+    if (ret == -1) {
+        return -1;
+    }
+
     /* Start the Storage engine */
     ret = flb_storage_create(config);
     if (ret == -1) {
@@ -1173,6 +1179,7 @@ int flb_engine_shutdown(struct flb_config *config)
     flb_filter_exit(config);
     flb_output_exit(config);
     flb_custom_exit(config);
+    flb_tls_verifier_exit(config);
     flb_input_exit_all(config);
 
     /* scheduler */

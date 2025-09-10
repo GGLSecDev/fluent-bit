@@ -392,6 +392,7 @@ struct flb_input_instance *flb_input_new(struct flb_config *config,
         instance->tls_key_file          = NULL;
         instance->tls_key_passwd        = NULL;
         instance->tls_provider_query    = NULL;
+        instance->tls_verifier          = NULL;
 #endif
 
         /* Plugin requires a co-routine context ? */
@@ -672,6 +673,9 @@ int flb_input_set_property(struct flb_input_instance *ins,
     else if (prop_key_check("tls.provider_query", k, len) == 0) {
         flb_utils_set_plugin_string_property("tls.provider_query", &ins->tls_provider_query, tmp);
     }
+    else if (prop_key_check("tls.tls_verifier", k, len) == 0) {
+        flb_utils_set_plugin_string_property("tls.tls_verifier", &ins->tls_verifier, tmp);
+    }
 #endif
     else if (prop_key_check("storage.type", k, len) == 0 && tmp) {
         /* Set the storage type */
@@ -832,6 +836,10 @@ void flb_input_instance_destroy(struct flb_input_instance *ins)
 
     if (ins->tls_provider_query) {
         flb_sds_destroy(ins->tls_provider_query);
+    }
+
+    if (ins->tls_verifier) {
+        flb_sds_destroy(ins->tls_verifier);
     }
 
     /* release the tag if any */
@@ -1060,6 +1068,7 @@ int flb_input_instance_init(struct flb_input_instance *ins,
     struct flb_config *ctx = ins->config;
     struct flb_input_plugin *p = ins->p;
     int tls_session_mode;
+    const struct flb_tls_verifier_instance *tls_ins = NULL;
 
     if (ins->log_level == -1 && config->log != NULL) {
         ins->log_level = config->log->level;
@@ -1242,6 +1251,7 @@ int flb_input_instance_init(struct flb_input_instance *ins,
             tls_session_mode = FLB_TLS_CLIENT_MODE;
         }
 
+        tls_ins = find_tls_verifier_instance(config, ins->tls_verifier);
         ins->tls = flb_tls_create(tls_session_mode,
                                   ins->tls_verify,
                                   ins->tls_debug,
@@ -1251,7 +1261,8 @@ int flb_input_instance_init(struct flb_input_instance *ins,
                                   ins->tls_crt_file,
                                   ins->tls_key_file,
                                   ins->tls_key_passwd,
-                                  ins->tls_provider_query);
+                                  ins->tls_provider_query,
+                                  tls_ins);
 
         if (ins->tls == NULL) {
             flb_error("[input %s] error initializing TLS context",

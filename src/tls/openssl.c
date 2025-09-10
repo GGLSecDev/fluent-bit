@@ -826,13 +826,19 @@ static void *tls_context_create(int verify,
                                 const char *crt_file,
                                 const char *key_file,
                                 const char *key_passwd,
-                                const char *provider_query)
+                                const char *provider_query,
+                                const struct flb_tls_verifier_instance *tls_ins)
 {
     int ret;
     SSL_CTX *ssl_ctx;
     struct tls_context *ctx;
     char err_buf[256];
     char *key_log_filename;
+    X509_STORE* store = NULL;
+    SSL_verify_cb verify_cb = NULL;
+    if (tls_ins) {
+        verify_cb = tls_ins->plugin->cb_verify;
+    }
 
     /*
      * Init library ? based in the documentation on OpenSSL >= 1.1.0 is not longer
@@ -895,12 +901,27 @@ static void *tls_context_create(int verify,
 #endif
     pthread_mutex_init(&ctx->mutex, NULL);
 
+    if (verify_cb) {
+        store = SSL_CTX_get_cert_store(ssl_ctx);
+        if (!store) {
+            flb_error("[tls] failed to retrieve openssl certificate store.");
+            goto error;
+        }
+        ret = X509_STORE_set_ex_data(store,
+                                     FLB_X509_STORE_EX_INDEX,
+                                     (struct flb_tls_verifier_instance *)tls_ins);
+        if (ret != 1) {
+            flb_error("[tls] Failed to set tls_verifier_instance in X509_STORE ex data");
+            goto error;
+        }
+    }
+
     /* Verify peer: by default OpenSSL always verify peer */
     if (verify == FLB_FALSE) {
         SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, NULL);
     }
     else {
-        SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
+        SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, verify_cb);
     }
 
     /* ca_path | ca_file */
