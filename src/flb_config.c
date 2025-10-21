@@ -336,13 +336,13 @@ struct flb_config *flb_config_init()
     /* Initialize linked lists */
     mk_list_init(&config->processor_plugins);
     mk_list_init(&config->custom_plugins);
-    mk_list_init(&config->tls_verifier_plugins);
+    mk_list_init(&config->network_verifier_plugins);
     mk_list_init(&config->in_plugins);
     mk_list_init(&config->parser_plugins);
     mk_list_init(&config->filter_plugins);
     mk_list_init(&config->out_plugins);
     mk_list_init(&config->customs);
-    mk_list_init(&config->tls_verifiers);
+    mk_list_init(&config->network_verifiers);
     mk_list_init(&config->inputs);
     mk_list_init(&config->parsers);
     mk_list_init(&config->filters);
@@ -766,9 +766,9 @@ static int configure_plugins_type(struct flb_config *config, struct flb_cf *cf, 
         s_type = "custom";
         list = &cf->customs;
     }
-    else if (type == FLB_CF_TLS_VERIFIER) {
-        s_type = "tls_verifier";
-        list = &cf->tls_verifiers;
+    else if (type == FLB_CF_NETWORK_VERIFIER) {
+        s_type = "network_verifier";
+        list = &cf->network_verifiers;
     }
     else if (type == FLB_CF_INPUT) {
         s_type = "input";
@@ -803,8 +803,8 @@ static int configure_plugins_type(struct flb_config *config, struct flb_cf *cf, 
         if (type == FLB_CF_CUSTOM) {
             ins = flb_custom_new(config, tmp, NULL);
         }
-        else if (type == FLB_CF_TLS_VERIFIER) {
-            ins = flb_tls_verifier_new(config, tmp);
+        else if (type == FLB_CF_NETWORK_VERIFIER) {
+            ins = flb_network_verifier_new(config, tmp);
         }
         else if (type == FLB_CF_INPUT) {
             ins = flb_input_new(config, tmp, NULL, FLB_TRUE);
@@ -851,15 +851,15 @@ static int configure_plugins_type(struct flb_config *config, struct flb_cf *cf, 
                     }
                 }
             }
-            else if (type == FLB_CF_TLS_VERIFIER) {
+            else if (type == FLB_CF_NETWORK_VERIFIER) {
                 if (kv->val->type == CFL_VARIANT_STRING) {
-                    ret = flb_tls_verifier_set_property(ins,
+                    ret = flb_network_verifier_set_property(ins,
                                                         kv->key,
                                                         kv->val->data.as_string);
                 } else if (kv->val->type == CFL_VARIANT_ARRAY) {
                     for (i = 0; i < kv->val->data.as_array->entry_count; i++) {
                         val = kv->val->data.as_array->entries[i];
-                        ret = flb_tls_verifier_set_property(ins,
+                        ret = flb_network_verifier_set_property(ins,
                                                             kv->key,
                                                             val->data.as_string);
                     }
@@ -959,7 +959,7 @@ int flb_config_load_config_format(struct flb_config *config, struct flb_cf *cf)
         if (strcasecmp(s->name, "env") == 0 ||
             strcasecmp(s->name, "service") == 0 ||
             strcasecmp(s->name, "custom") == 0 ||
-            strcasecmp(s->name, "tls_verifier") == 0 ||
+            strcasecmp(s->name, "network_verifier") == 0 ||
             strcasecmp(s->name, "input") == 0 ||
             strcasecmp(s->name, "filter") == 0 ||
             strcasecmp(s->name, "output") == 0) {
@@ -1018,7 +1018,7 @@ int flb_config_load_config_format(struct flb_config *config, struct flb_cf *cf)
     if (ret == -1) {
         return -1;
     }
-    ret = configure_plugins_type(config, cf, FLB_CF_TLS_VERIFIER);
+    ret = configure_plugins_type(config, cf, FLB_CF_NETWORK_VERIFIER);
     if (ret == -1) {
         return -1;
     }
