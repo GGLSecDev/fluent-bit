@@ -60,7 +60,7 @@ enum section_type {
     FLB_CF_PLUGINS,               /* plugins             */
     FLB_CF_UPSTREAM_SERVERS,      /* upstream_servers    */
     FLB_CF_CUSTOM,                /* [CUSTOM]            */
-    FLB_CF_TLS_VERIFIER,          /* [TLS_VERIFIER]      */
+    FLB_CF_NETWORK_VERIFIER,      /* [network_verifier]      */
     FLB_CF_INPUT,                 /* [INPUT]             */
     FLB_CF_FILTER,                /* [FILTER]            */
     FLB_CF_OUTPUT,                /* [OUTPUT]            */
@@ -113,8 +113,8 @@ struct flb_cf {
     /* 'custom' type plugins */
     struct mk_list customs;
 
-    /* 'tls_verifier' type plugins */
-    struct mk_list tls_verifiers;
+    /* 'network_verifier' type plugins */
+    struct mk_list network_verifiers;
 
     /* pipeline */
     struct mk_list inputs;
