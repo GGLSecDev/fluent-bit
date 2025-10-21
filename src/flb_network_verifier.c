@@ -17,7 +17,7 @@
  *  limitations under the License.
  */
 
-#include <fluent-bit/flb_tls_verifier.h>
+#include <fluent-bit/flb_network_verifier.h>
 #include <fluent-bit/flb_mem.h>
 #include <fluent-bit/flb_env.h>
 #include <fluent-bit/flb_kv.h>
@@ -25,18 +25,20 @@
 
 static int instance_id(struct flb_config *config)
 {
-    struct flb_tls_verifier_instance *entry;
+    struct flb_network_verifier_instance *entry;
 
-    if (mk_list_size(&config->tls_verifiers) == 0) {
+    if (mk_list_size(&config->network_verifiers) == 0) {
         return 0;
     }
 
-    entry = mk_list_entry_last(&config->tls_verifiers, struct flb_tls_verifier_instance,
+    entry = mk_list_entry_last(&config->network_verifiers, 
+                               struct flb_network_verifier_instance,
                                _head);
     return (entry->id + 1);
 }
 
-const char *flb_tls_verifier_get_alias(struct flb_tls_verifier_instance *ins)
+const char *flb_network_verifier_get_alias(
+    struct flb_network_verifier_instance *ins)
 {
     if (ins->alias) {
         return ins->alias;
@@ -55,18 +57,19 @@ static int prop_key_check(const char *key, const char *kv, int k_len)
     return -1;
 }
 
-/* Initialize all tls verify plugins */
-int flb_tls_verifier_init_all(struct flb_config *config)
+/* Initialize all network verify plugins */
+int flb_network_verifier_init_all(struct flb_config *config)
 {
     int ret;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tls_verifier_plugin *plugin;
-    struct flb_tls_verifier_instance *ins;
+    struct flb_network_verifier_plugin *plugin;
+    struct flb_network_verifier_instance *ins;
 
-    /* Iterate all active tls verify instance plugins */
-    mk_list_foreach_safe(head, tmp, &config->tls_verifiers) {
-        ins = mk_list_entry(head, struct flb_tls_verifier_instance, _head);
+    /* Iterate all active network verify instance plugins */
+    mk_list_foreach_safe(head, tmp, &config->network_verifiers) {
+        ins = mk_list_entry(head, struct flb_network_verifier_instance, 
+                            _head);
 
         if (ins->log_level == -1) {
             ins->log_level = config->log->level;
@@ -78,8 +81,8 @@ int flb_tls_verifier_init_all(struct flb_config *config)
          * Before to call the initialization callback, make sure that the received
          * configuration parameters are valid if the plugin is registering a config map.
          */
-        if (flb_tls_verifier_plugin_property_check(ins, config) == -1) {
-            flb_tls_verifier_instance_destroy(ins);
+        if (flb_network_verifier_plugin_property_check(ins, config) == -1) {
+            flb_network_verifier_instance_destroy(ins);
             return -1;
         }
 
@@ -87,8 +90,8 @@ int flb_tls_verifier_init_all(struct flb_config *config)
         if (plugin->cb_init) {
             ret = plugin->cb_init(ins, config);
             if (ret != 0) {
-                flb_error("Failed initialize tls_verifier %s", ins->name);
-                flb_tls_verifier_instance_destroy(ins);
+                flb_error("Failed initialize network_verifier %s", ins->name);
+                flb_network_verifier_instance_destroy(ins);
                 return -1;
             }
         }
@@ -97,20 +100,20 @@ int flb_tls_verifier_init_all(struct flb_config *config)
     return 0;
 }
 
-struct flb_tls_verifier_instance *flb_tls_verifier_new(struct flb_config *config,
-                                                       const char *name)
+struct flb_network_verifier_instance *flb_network_verifier_new(
+    struct flb_config *config, const char *name)
 {
     int id;
     struct mk_list *head;
-    struct flb_tls_verifier_plugin *plugin;
-    struct flb_tls_verifier_instance *instance = NULL;
+    struct flb_network_verifier_plugin *plugin;
+    struct flb_network_verifier_instance *instance = NULL;
 
     if (!name) {
         return NULL;
     }
 
-    mk_list_foreach(head, &config->tls_verifier_plugins) {
-        plugin = mk_list_entry(head, struct flb_tls_verifier_plugin, _head);
+    mk_list_foreach(head, &config->network_verifier_plugins) {
+        plugin = mk_list_entry(head, struct flb_network_verifier_plugin, _head);
         if (strcmp(plugin->name, name) == 0) {
             break;
         }
@@ -121,7 +124,7 @@ struct flb_tls_verifier_instance *flb_tls_verifier_new(struct flb_config *config
         return NULL;
     }
 
-    instance = flb_calloc(1, sizeof(struct flb_tls_verifier_instance));
+    instance = flb_calloc(1, sizeof(struct flb_network_verifier_instance));
     if (!instance) {
         flb_errno();
         return NULL;
@@ -141,14 +144,14 @@ struct flb_tls_verifier_instance *flb_tls_verifier_new(struct flb_config *config
     instance->log_level = -1;
 
     mk_list_init(&instance->properties);
-    mk_list_add(&instance->_head, &config->tls_verifiers);
+    mk_list_add(&instance->_head, &config->network_verifiers);
 
     return instance;
 }
 
 /* Override a configuration property for the given input_instance plugin */
-int flb_tls_verifier_set_property(struct flb_tls_verifier_instance *ins,
-                                  const char *k, const char *v)
+int flb_network_verifier_set_property(struct flb_network_verifier_instance *ins,
+                                         const char *k, const char *v)
 {
     int len;
     int ret;
@@ -194,12 +197,12 @@ int flb_tls_verifier_set_property(struct flb_tls_verifier_instance *ins,
     return 0;
 }
 
-int flb_tls_verifier_plugin_property_check(struct flb_tls_verifier_instance *ins,
-                                           struct flb_config *config)
+int flb_network_verifier_plugin_property_check(
+    struct flb_network_verifier_instance *ins, struct flb_config *config)
 {
     int ret = 0;
     struct mk_list *config_map;
-    struct flb_tls_verifier_plugin *plugin = ins->plugin;
+    struct flb_network_verifier_plugin *plugin = ins->plugin;
 
     if (plugin->config_map) {
         /*
@@ -208,14 +211,14 @@ int flb_tls_verifier_plugin_property_check(struct flb_tls_verifier_instance *ins
          */
         config_map = flb_config_map_create(config, plugin->config_map);
         if (!config_map) {
-            flb_error("[tls_verifier] error loading config map for '%s' plugin",
+            flb_error("[network_verifier] error loading config map for '%s' plugin",
                       plugin->name);
             return -1;
         }
         ins->config_map = config_map;
 
         if (!ins->alias || flb_sds_len(ins->alias) == 0) {
-            flb_error("[tls_verifier] NO alias property for %s tls_verifier instance.",
+            flb_error("[network_verifier] NO alias property for %s network_verifier instance.",
                         ins->name);
             return -1;
         }
@@ -231,36 +234,37 @@ int flb_tls_verifier_plugin_property_check(struct flb_tls_verifier_instance *ins
     return 0;
 }
 
-void flb_tls_verifier_instance_exit(struct flb_tls_verifier_instance *ins,
-                                    struct flb_config *config)
+void flb_network_verifier_instance_exit(struct flb_network_verifier_instance *ins,
+                                           struct flb_config *config)
 {
-    struct flb_tls_verifier_plugin *plugin = ins->plugin;
+    struct flb_network_verifier_plugin *plugin = ins->plugin;
     if (plugin->cb_exit && ins->context) {
         plugin->cb_exit(ins->context, config);
     }
 }
 
-/* Invoke exit call for the tls_verifier plugin */
-void flb_tls_verifier_exit(struct flb_config *config)
+/* Invoke exit call for the network_verifier plugin */
+void flb_network_verifier_exit(struct flb_config *config)
 {
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tls_verifier_instance *ins;
-    struct flb_tls_verifier_plugin *plugin;
+    struct flb_network_verifier_instance *ins;
+    struct flb_network_verifier_plugin *plugin;
 
-    mk_list_foreach_safe(head, tmp, &config->tls_verifiers) {
-        ins = mk_list_entry(head, struct flb_tls_verifier_instance, _head);
+    mk_list_foreach_safe(head, tmp, &config->network_verifiers) {
+        ins = mk_list_entry(head, struct flb_network_verifier_instance, _head);
         plugin = ins->plugin;
         if (!plugin) {
             continue;
         }
-        flb_tls_verifier_instance_exit(ins, config);
-        flb_tls_verifier_instance_destroy(ins);
+        flb_network_verifier_instance_exit(ins, config);
+        flb_network_verifier_instance_destroy(ins);
     }
 }
 
 
-void flb_tls_verifier_instance_destroy(struct flb_tls_verifier_instance *ins)
+void flb_network_verifier_instance_destroy(
+    struct flb_network_verifier_instance *ins)
 {
     if (!ins) {
         return;
@@ -282,19 +286,19 @@ void flb_tls_verifier_instance_destroy(struct flb_tls_verifier_instance *ins)
     flb_free(ins);
 }
 
-const struct flb_tls_verifier_instance *find_tls_verifier_instance(
+const struct flb_network_verifier_instance *find_network_verifier_instance(
                 struct flb_config *config,
                 const char* alias)
 {
     struct mk_list *head;
-    struct flb_tls_verifier_instance *verifier;
+    struct flb_network_verifier_instance *verifier;
 
     if (!alias || strlen(alias) == 0) {
         return NULL;
     }
 
-    mk_list_foreach(head, &config->tls_verifiers) {
-        verifier = mk_list_entry(head, struct flb_tls_verifier_instance, _head);
+    mk_list_foreach(head, &config->network_verifiers) {
+        verifier = mk_list_entry(head, struct flb_network_verifier_instance, _head);
         if (strcmp(verifier->alias, alias) == 0) {
             return verifier;
         }

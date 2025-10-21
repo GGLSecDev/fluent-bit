@@ -17,8 +17,8 @@
  *  limitations under the License.
  */
 
-#ifndef FLB_TLS_VERIFIER_H
-#define FLB_TLS_VERIFIER_H
+#ifndef FLB_NETWORK_VERIFIER_H
+#define FLB_NETWORK_VERIFIER_H
 
 #include <fluent-bit/flb_info.h>
 #include <fluent-bit/flb_config.h>
@@ -28,9 +28,9 @@
 
 #define FLB_X509_STORE_EX_INDEX 0
 
-struct flb_tls_verifier_instance;
+struct flb_network_verifier_instance;
 
-struct flb_tls_verifier_plugin {
+struct flb_network_verifier_plugin {
     char *name;            /* Name                               */
     char *description;     /* Description                        */
 
@@ -38,11 +38,12 @@ struct flb_tls_verifier_plugin {
     struct flb_config_map *config_map;
 
     /* Callbacks */
-    int (*cb_init) (struct flb_tls_verifier_instance *, struct flb_config *);
-    int (*cb_verify) (int, X509_STORE_CTX *);
+    int (*cb_init) (struct flb_network_verifier_instance *, struct flb_config *);
+    int (*cb_verify_tls) (int, X509_STORE_CTX *);
+    int (*cb_connection_failure) (struct flb_network_verifier_instance*, const char*, int, int, const char*);
     int (*cb_exit) (void *, struct flb_config *);
 
-    struct mk_list _head;  /* Link to parent list (config->tls_verifier_plugins) */
+    struct mk_list _head;  /* Link to parent list (config->network_verifier_plugins) */
 };
 
 /*
@@ -52,13 +53,13 @@ struct flb_tls_verifier_plugin {
  * An instance will contain basic fixed plugin data while also
  * allowing for plugin context data, generated when the plugin is invoked.
  */
-struct flb_tls_verifier_instance {
+struct flb_network_verifier_instance {
     int id;                                 /* instance id              */
     int log_level;                          /* instance log level       */
     char name[32];                          /* numbered name            */
     char *alias;                            /* alias name               */
     void *context;                          /* Instance local context   */
-    struct flb_tls_verifier_plugin *plugin; /* original plugin          */
+    struct flb_network_verifier_plugin *plugin; /* original plugin   */
 
     struct mk_list properties;              /* config properties        */
     struct mk_list *config_map;             /* configuration map        */
@@ -66,25 +67,29 @@ struct flb_tls_verifier_instance {
     /* Keep a reference to the original context this instance belongs to */
     const struct flb_config *config;
 
-    struct mk_list _head;                   /* link to config->tls_verifiers  */
+    struct mk_list _head;                   /* config->config_verifiers  */
 };
 
-struct flb_tls_verifier_instance *flb_tls_verifier_new(struct flb_config *config,
-                                                       const char *name);
+struct flb_network_verifier_instance *flb_network_verifier_new(
+    struct flb_config *config, const char *name);
 
-const char *flb_tls_verifier_get_alias(struct flb_tls_verifier_instance *ins);
+const char *flb_network_verifier_get_alias(
+    struct flb_network_verifier_instance *ins);
 
-int flb_tls_verifier_set_property(struct flb_tls_verifier_instance *ins,
-                                  const char *k, const char *v);
-int flb_tls_verifier_plugin_property_check(struct flb_tls_verifier_instance *ins,
-                                           struct flb_config *config);
-int flb_tls_verifier_init_all(struct flb_config *config);
-void flb_tls_verifier_exit(struct flb_config *config);
+int flb_network_verifier_set_property(
+   struct flb_network_verifier_instance *ins, const char *k, const char *v);
+int flb_network_verifier_plugin_property_check(
+    struct flb_network_verifier_instance *ins,
+    struct flb_config *config);
+int flb_network_verifier_init_all(struct flb_config *config);
+void flb_network_verifier_exit(struct flb_config *config);
 
-void flb_tls_verifier_instance_destroy(struct flb_tls_verifier_instance *ins);
+void flb_network_verifier_instance_destroy(
+    struct flb_network_verifier_instance *ins);
 
-const struct flb_tls_verifier_instance *find_tls_verifier_instance(
+const struct flb_network_verifier_instance *find_network_verifier_instance(
                 struct flb_config *config,
                 const char* alias);
+
 
 #endif
