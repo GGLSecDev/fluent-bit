@@ -77,9 +77,9 @@ static int is_output(char *name)
     return FLB_FALSE;
 }
 
-static int is_tls_verifier(char *name)
+static int is_network_verifier(char *name)
 {
-    if (strncmp(name, "tls_verifier_", 13) == 0) {
+    if (strncmp(name, "network_verifier_", 17) == 0) {
         return FLB_TRUE;
     }
 
@@ -165,7 +165,7 @@ static char *path_to_plugin_name(char *path)
         is_processor(name) == FLB_FALSE &&
         is_filter(name) == FLB_FALSE &&
         is_output(name) == FLB_FALSE &&
-        is_tls_verifier(name) == FLB_FALSE) {
+        is_network_verifier(name) == FLB_FALSE) {
         flb_error("[plugin] invalid plugin type: %s", name);
         flb_free(name);
         return NULL;
@@ -203,7 +203,7 @@ struct flb_plugins *flb_plugin_create()
     mk_list_init(&ctx->processor);
     mk_list_init(&ctx->filter);
     mk_list_init(&ctx->output);
-    mk_list_init(&ctx->tls_verifier);
+    mk_list_init(&ctx->network_verifier);
 
     return ctx;
 }
@@ -220,7 +220,7 @@ int flb_plugin_load(char *path, struct flb_plugins *ctx,
     struct flb_processor_plugin *processor;
     struct flb_filter_plugin *filter;
     struct flb_output_plugin *output;
-    struct flb_tls_verifier_plugin *tls_verifier = NULL;
+    struct flb_network_verifier_plugin *network_verifier = NULL;
 
     /* Open the shared object file: dlopen(3) */
     dso_handle = get_handle(path);
@@ -298,17 +298,17 @@ int flb_plugin_load(char *path, struct flb_plugins *ctx,
         memcpy(output, symbol, sizeof(struct flb_output_plugin));
         mk_list_add(&output->_head, &config->out_plugins);
     }
-    else if (is_tls_verifier(plugin_stname) == FLB_TRUE) {
-        type = FLB_PLUGIN_TLS_VERIFIER;
-        tls_verifier = flb_malloc(sizeof(struct flb_tls_verifier_plugin));
-        if (!tls_verifier) {
+    else if (is_network_verifier(plugin_stname) == FLB_TRUE) {
+        type = FLB_PLUGIN_NETWORK_VERIFIER;
+        network_verifier = flb_malloc(sizeof(struct flb_network_verifier_plugin));
+        if (!network_verifier) {
             flb_errno();
             flb_free(plugin_stname);
             dlclose(dso_handle);
             return -1;
         }
-        memcpy(tls_verifier, symbol, sizeof(struct flb_tls_verifier_plugin));
-        mk_list_add(&tls_verifier->_head, &config->tls_verifier_plugins);
+        memcpy(network_verifier, symbol, sizeof(struct flb_network_verifier_plugin));
+        mk_list_add(&network_verifier->_head, &config->network_verifier_plugins);
     }
     flb_free(plugin_stname);
 
@@ -343,8 +343,8 @@ int flb_plugin_load(char *path, struct flb_plugins *ctx,
     else if (type == FLB_PLUGIN_OUTPUT) {
         mk_list_add(&plugin->_head, &ctx->output);
     }
-    else if (type == FLB_PLUGIN_TLS_VERIFIER) {
-        mk_list_add(&plugin->_head, &ctx->tls_verifier);
+    else if (type == FLB_PLUGIN_NETWORK_VERIFIER) {
+        mk_list_add(&plugin->_head, &ctx->network_verifier);
     }
 
     return 0;
@@ -516,7 +516,7 @@ void flb_plugin_destroy(struct flb_plugins *ctx)
         destroy_plugin(plugin);
     }
 
-    mk_list_foreach_safe(head, tmp, &ctx->tls_verifier) {
+    mk_list_foreach_safe(head, tmp, &ctx->network_verifier) {
         plugin = mk_list_entry(head, struct flb_plugin, _head);
         destroy_plugin(plugin);
     }
