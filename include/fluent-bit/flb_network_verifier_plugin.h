@@ -17,18 +17,18 @@
  *  limitations under the License.
  */
 
-#ifndef FLB_TLS_VERIFIER_PLUGIN_H
-#define FLB_TLS_VERIFIER_PLUGIN_H
+#ifndef FLB_NETWORK_VERIFIER_PLUGIN_H
+#define FLB_NETWORK_VERIFIER_PLUGIN_H
 
 #include <fluent-bit/flb_info.h>
-#include <fluent-bit/flb_tls_verifier.h>
+#include <fluent-bit/flb_network_verifier.h>
 #include <fluent-bit/flb_log.h>
 
 #define flb_plg_log(ctx, level, fmt, ...)                                \
     if (flb_log_check_level(ctx->log_level, level))                      \
-        flb_log_print(level, NULL, 0, "[tls_verifier:%s:%s] " fmt,       \
+        flb_log_print(level, NULL, 0, "[network_verifier:%s:%s] " fmt,       \
                       ctx->plugin->name,                                 \
-                      flb_tls_verifier_get_alias(ctx), ##__VA_ARGS__)
+                      flb_network_verifier_get_alias(ctx), ##__VA_ARGS__)
 
 #define flb_plg_error(ctx, fmt, ...) \
     flb_plg_log(ctx, FLB_LOG_ERROR, fmt, ##__VA_ARGS__)
