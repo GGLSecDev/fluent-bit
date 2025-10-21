@@ -77,6 +77,7 @@ struct tls_context {
     int mode;
     char *alpn;
     pthread_mutex_t mutex;
+    const struct flb_network_verifier_instance* verifier_ins;
 #if defined(FLB_USE_OPENSSL_STORE) && (OPENSSL_VERSION_NUMBER >= OPENSSL_3_0)
     X509 *store_cert;
     EVP_PKEY *store_pkey;
@@ -176,6 +177,22 @@ static void openssl_load_provider(const char* provider)
 }
 
 #endif
+
+void flb_tls_notify_error(const struct tls_context* tls_context,
+    int error_code, const char* error_msg)
+{
+    struct flb_network_verifier_instance* conn_verifier = NULL;
+
+    if (tls_context != NULL) {
+        conn_verifier = tls_context->verifier_ins;
+    }
+
+    if (conn_verifier && conn_verifier->plugin &&
+        conn_verifier->plugin->cb_connection_failure) {
+        conn_verifier->plugin->cb_connection_failure(conn_verifier, NULL, 0,
+                                                     error_code, error_msg);
+    }
+}
 
 static int tls_init(void)
 {
@@ -827,7 +844,7 @@ static void *tls_context_create(int verify,
                                 const char *key_file,
                                 const char *key_passwd,
                                 const char *provider_query,
-                                const struct flb_tls_verifier_instance *tls_ins)
+                                const struct flb_network_verifier_instance *conn_ins)
 {
     int ret;
     SSL_CTX *ssl_ctx;
@@ -836,8 +853,8 @@ static void *tls_context_create(int verify,
     char *key_log_filename;
     X509_STORE* store = NULL;
     SSL_verify_cb verify_cb = NULL;
-    if (tls_ins) {
-        verify_cb = tls_ins->plugin->cb_verify;
+    if (conn_ins) {
+        verify_cb = conn_ins->plugin->cb_verify_tls;
     }
 
     /*
@@ -895,6 +912,7 @@ static void *tls_context_create(int verify,
     ctx->mode = mode;
     ctx->alpn = NULL;
     ctx->debug_level = debug;
+    ctx->verifier_ins = conn_ins;
 #ifdef FLB_USE_OPENSSL_STORE
     ctx->store_cert = NULL;
     ctx->store_pkey = NULL;
@@ -909,9 +927,9 @@ static void *tls_context_create(int verify,
         }
         ret = X509_STORE_set_ex_data(store,
                                      FLB_X509_STORE_EX_INDEX,
-                                     (struct flb_tls_verifier_instance *)tls_ins);
+                                     (struct flb_network_verifier_instance *)conn_ins);
         if (ret != 1) {
-            flb_error("[tls] Failed to set tls_verifier_instance in X509_STORE ex data");
+            flb_error("[tls] Failed to set network_verifier_instance in X509_STORE ex data");
             goto error;
         }
     }
@@ -1286,6 +1304,8 @@ static int tls_net_read(struct flb_tls_session *session,
              * to the net_error field.
              */
 
+            flb_tls_notify_error(ctx, ret, err_buf);
+
             session->connection->net_error = errno;
 
             ret = -1;
@@ -1293,6 +1313,7 @@ static int tls_net_read(struct flb_tls_session *session,
         else if (ret < 0) {
             ERR_error_string_n(ret, err_buf, sizeof(err_buf)-1);
             flb_error("[tls] error: %s", err_buf);
+            flb_tls_notify_error(ctx, ret, err_buf);
         }
         else {
             ret = -1;
@@ -1344,15 +1365,18 @@ static int tls_net_write(struct flb_tls_session *session,
             if (ERR_get_error() == 0) {
                 if (ret == 0) {
                     flb_debug("[tls] connection closed");
+                    flb_tls_notify_error(ctx, ret, "Connection Closed");
                 }
                 else {
                     flb_error("[tls] syscall error: %s", strerror(errno));
+                    flb_tls_notify_error(ctx, errno, strerror(errno));
                 }
             }
             else {
                 err_code = ERR_get_error();
                 ERR_error_string_n(err_code, err_buf, sizeof(err_buf) - 1);
                 flb_error("[tls] syscall error: %s", err_buf);
+                flb_tls_notify_error(ctx, err_code, err_buf);
             }
 
             /* According to the documentation these are non-recoverable
@@ -1368,10 +1392,12 @@ static int tls_net_write(struct flb_tls_session *session,
             err_code = ERR_get_error();
             if (err_code == 0) {
                 flb_error("[tls] unknown error");
+                flb_tls_notify_error(ctx, err_code, "Unknown error");
             }
             else {
                 ERR_error_string_n(err_code, err_buf, sizeof(err_buf) - 1);
                 flb_error("[tls] error: %s", err_buf);
+                flb_tls_notify_error(ctx, err_code, err_buf);
             }
 
             ret = -1;
