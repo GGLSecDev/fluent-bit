@@ -377,8 +377,9 @@ struct flb_output_instance {
     char *tls_win_thumbprints;               /* CertStore Thumbprints (Windows) */
 # endif
     char *tls_provider_query;            /* OpenSSL Provider Query */
-    char *tls_verifier;                  /* TLS Verifier plugin alias */
 #endif
+    char* network_verifier;           /* Connection Verifier alias */
+    struct flb_network_verifier_instance* verifier_ins;
 
     /*
      * network info:
