@@ -154,7 +154,7 @@ static struct flb_upstream_node *create_node(int id,
     char *tls_key_file = NULL;
     char *tls_key_passwd = NULL;
     char *tls_provider_query = NULL;
-    char *tls_verifier = NULL;
+    char *network_verifier = NULL;
     flb_sds_t translated_value;
     struct cfl_list *head;
     struct cfl_kvpair *entry;
@@ -164,7 +164,7 @@ static struct flb_upstream_node *create_node(int id,
                                 "tls.ca_path", "tls.ca_file", "tls.crt_file",
                                 "tls.key_file", "tls.key_passwd",
                                 "tls.verify_hostname", "tls.provider_query",
-                                "tls.tls_verifier", NULL};
+                                "network_verifier", NULL};
 
     struct flb_upstream_node *node;
 
@@ -240,7 +240,7 @@ static struct flb_upstream_node *create_node(int id,
 
     tls_provider_query = flb_cf_section_property_get_string(cf, s, "tls.provider_query");
 
-    tls_verifier = flb_cf_section_property_get_string(cf, s, "tls.tls_verifier");
+    network_verifier = flb_cf_section_property_get_string(cf, s, "network_verifier");
 
     translate_environment_variables((flb_sds_t *) &name, config, FLB_TRUE);
     translate_environment_variables((flb_sds_t *) &host, config, FLB_TRUE);
@@ -252,7 +252,7 @@ static struct flb_upstream_node *create_node(int id,
     translate_environment_variables((flb_sds_t *) &tls_key_file, config, FLB_TRUE);
     translate_environment_variables((flb_sds_t *) &tls_key_passwd, config, FLB_TRUE);
     translate_environment_variables((flb_sds_t *) &tls_provider_query, config, FLB_TRUE);
-    translate_environment_variables((flb_sds_t *) &tls_verifier, config, FLB_TRUE);
+    translate_environment_variables((flb_sds_t *) &network_verifier, config, FLB_TRUE);
 
     /*
      * Create hash table to store unknown key/values that might be used
@@ -332,7 +332,7 @@ static struct flb_upstream_node *create_node(int id,
                                     tls_debug, tls_vhost, tls_ca_path, tls_ca_file,
                                     tls_crt_file, tls_key_file,
                                     tls_key_passwd, tls_provider_query,
-                                    tls_verifier, ht, config);
+                                    network_verifier, ht, config);
 
     /* Teardown for created flb_sds_t stuffs by flb_cf_section_property_get_string(). */
     if (tls_vhost != NULL) {
@@ -363,8 +363,8 @@ static struct flb_upstream_node *create_node(int id,
         flb_sds_destroy(tls_provider_query);
     }
 
-    if (tls_verifier != NULL) {
-        flb_sds_destroy(tls_verifier);
+    if (network_verifier != NULL) {
+        flb_sds_destroy(network_verifier);
     }
     return node;
 }
