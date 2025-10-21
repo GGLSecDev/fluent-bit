@@ -26,7 +26,7 @@
 #include <fluent-bit/flb_filter.h>
 #include <fluent-bit/flb_output.h>
 #include <fluent-bit/flb_custom.h>
-#include <fluent-bit/flb_tls_verifier.h>
+#include <fluent-bit/flb_network_verifier.h>
 #include <fluent-bit/flb_config.h>
 #include <fluent-bit/flb_config_format.h>
 #include <fluent-bit/flb_kv.h>
@@ -206,19 +206,19 @@ static int flb_custom_propery_check_all(struct flb_config *config)
     return 0;
 }
 
-static int flb_tls_verifier_property_check_all(struct flb_config *config)
+static int flb_network_verifier_property_check_all(struct flb_config *config)
 {
     int ret;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_tls_verifier_instance *ins;
+    struct flb_network_verifier_instance *ins;
 
-    /* Iterate all active tls verifier instance plugins */
-    mk_list_foreach_safe(head, tmp, &config->tls_verifiers) {
-        ins = mk_list_entry(head, struct flb_tls_verifier_instance, _head);
+    /* Iterate all active network verifier instance plugins */
+    mk_list_foreach_safe(head, tmp, &config->network_verifiers) {
+        ins = mk_list_entry(head, struct flb_network_verifier_instance, _head);
 
         /* Check plugin property */
-        ret = flb_tls_verifier_plugin_property_check(ins, config);
+        ret = flb_network_verifier_plugin_property_check(ins, config);
         if (ret == -1) {
             return -1;
         }
@@ -269,9 +269,9 @@ int flb_reload_property_check_all(struct flb_config *config)
     }
 
     /* Check properties of tls verifier plugins */
-    ret = flb_tls_verifier_property_check_all(config);
+    ret = flb_network_verifier_property_check_all(config);
     if (ret == -1) {
-        flb_error("[reload] check properties for tls verifier plugins has failed");
+        flb_error("[reload] check properties for network verifier plugins has failed");
 
         return -1;
     }
