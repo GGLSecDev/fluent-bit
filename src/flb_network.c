@@ -1317,6 +1317,7 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
     char address[41];
     struct addrinfo hints;
     struct addrinfo *sorted_res, *res, *rp;
+    const char* error = NULL;
 
     if (is_async == FLB_TRUE && !u_conn) {
         flb_error("[net] invalid async mode with not set upstream connection");
@@ -1355,11 +1356,15 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
 
     if (ret) {
         if (use_async_dns) {
-            flb_warn("[net] getaddrinfo(host='%s', err=%d): %s", host, ret, ares_strerror(ret));
+            error = ares_strerror(ret);
+            flb_warn("[net] getaddrinfo(host='%s', err=%d): %s", host, ret, error);
         }
         else {
-            flb_warn("[net] getaddrinfo(host='%s', err=%d): %s", host, ret, gai_strerror(ret));
+            error = gai_strerror(ret);
+            flb_warn("[net] getaddrinfo(host='%s', err=%d): %s", host, ret, error);
         }
+
+        flb_connection_notify_error(u_conn, host, port, ret, error);
 
         return -1;
     }
@@ -1368,6 +1373,9 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
         if (u_conn->net_error == ETIMEDOUT) {
             flb_warn("[net] timeout detected between DNS lookup and connection attempt");
         }
+
+        flb_connection_notify_error(u_conn, host, port, u_conn->net_error,
+                                    "Connection error");
 
         if (use_async_dns) {
             flb_net_free_translated_addrinfo(res);
@@ -1386,6 +1394,8 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
 
         if (sorted_res == NULL) {
             flb_debug("[net] error sorting ipv4 getaddrinfo results");
+            flb_connection_notify_error(u_conn, host, port, -1,
+                                        "Error sorting IPV4 results");
 
             if (use_async_dns) {
                 flb_net_free_translated_addrinfo(res);
@@ -1402,6 +1412,8 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
 
         if (sorted_res == NULL) {
             flb_debug("[net] error sorting ipv6 getaddrinfo results");
+            flb_connection_notify_error(u_conn, host, port, -1,
+                "Error sorting IPV6 results");
 
             if (use_async_dns) {
                 flb_net_free_translated_addrinfo(res);
@@ -1495,6 +1507,9 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
             flb_debug("[net] socket #%i could not connect to %s:%s",
                       fd, address, _port);
 
+            flb_connection_notify_error(u_conn, address, port, ret,
+                                        "Couldn't connect to end point");
+
             if (u_conn) {
                 u_conn->fd = -1;
                 u_conn->event.fd = -1;
@@ -1512,6 +1527,8 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
     if (fd == -1) {
         flb_debug("[net] could not connect to %s:%s",
                   host, _port);
+        flb_connection_notify_error(u_conn, host, port, -1,
+                                    "Couldn't connect to end point file descriptor");
     }
 
     if (use_async_dns) {
@@ -1522,6 +1539,8 @@ flb_sockfd_t flb_net_tcp_connect(const char *host, unsigned long port,
     }
 
     if (rp == NULL) {
+        flb_connection_notify_error(u_conn, host, port, -1,
+                                    "Couldn't connect to remote endpoint");
         return -1;
     }
 
