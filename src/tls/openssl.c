@@ -1063,7 +1063,7 @@ static void *tls_context_create(int verify,
     char *key_log_filename;
     X509_STORE* store = NULL;
     SSL_verify_cb verify_cb = NULL;
-    if (conn_ins) {
+    if (conn_ins && conn_ins->plugin ) {
         verify_cb = conn_ins->plugin->cb_verify_tls;
     }
 
