@@ -67,7 +67,7 @@ struct flb_network_verifier_instance {
     /* Keep a reference to the original context this instance belongs to */
     const struct flb_config *config;
 
-    struct mk_list _head;                   /* config->config_verifiers  */
+    struct mk_list _head;                   /* config->network_verifiers  */
 };
 
 struct flb_network_verifier_instance *flb_network_verifier_new(
