@@ -659,7 +659,7 @@ static struct flb_config_map config_map[] = {
      FLB_CONFIG_MAP_BOOL, "add_observed_time", "false",
      0, FLB_TRUE, offsetof(struct flb_tail_config, add_observed_time),
      "If enabled, add an ObservedTimestamp key to the event metadata with the time "
-     "of processing the file as the value."
+     "of processing the record as the value."
     },
     {
      FLB_CONFIG_MAP_TIME, "ignore_older", "0",
