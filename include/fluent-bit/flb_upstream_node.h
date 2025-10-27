@@ -44,7 +44,7 @@ struct flb_upstream_node {
     char *tls_key_file;       /* Cert Key                     */
     char *tls_key_passwd;     /* Cert Key Password            */
     char *tls_provider_query; /* OpenSSL Provider Query       */
-    char *tls_verifier;       /* TLS Verifier plugin alias    */
+    char *network_verifier;   /* Network Verifier alias       */
 
     /* context with mbedTLS contexts and data */
     struct flb_tls *tls;
@@ -77,7 +77,7 @@ struct flb_upstream_node *flb_upstream_node_create(flb_sds_t name, flb_sds_t hos
                                                    const char *tls_key_file,
                                                    const char *tls_key_passwd,
                                                    const char *tls_provider_query,
-                                                   const char *tls_verifier,
+                                                   const char *network_verifier,
                                                    struct flb_hash_table *ht,
                                                    struct flb_config *config);
 const char *flb_upstream_node_get_property(const char *prop,

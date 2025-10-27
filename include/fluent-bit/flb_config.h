@@ -134,7 +134,7 @@ struct flb_config {
     struct mk_list parser_plugins;      /* not yet implemented */
     struct mk_list filter_plugins;
     struct mk_list out_plugins;
-    struct mk_list tls_verifier_plugins;
+    struct mk_list network_verifier_plugins;
 
     /* Custom instances */
     struct mk_list customs;
@@ -154,8 +154,8 @@ struct flb_config {
     /* Filter instances */
     struct mk_list filters;
 
-    /* TLS Verifier instances */
-    struct mk_list tls_verifiers;
+    /* Network Verifier instances */
+    struct mk_list network_verifiers;
 
     struct mk_event_loop *evl;          /* the event loop (mk_core) */
 
