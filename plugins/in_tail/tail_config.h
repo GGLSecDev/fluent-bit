@@ -100,7 +100,7 @@ struct flb_tail_config {
     flb_sds_t key;             /* key for unstructured record  */
     bool add_observed_time;    /* enable creation of key "ObservedTimestamp"
                                 * to event metadata with time of processing 
-                                * the file */
+                                * the record */
     int   skip_long_lines;     /* skip long lines              */
     int   skip_empty_lines;    /* skip empty lines (off)       */
     int   exit_on_eof;         /* exit fluent-bit on EOF, test */
