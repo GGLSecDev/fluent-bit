@@ -56,7 +56,7 @@
 
 #define ObservedTimestamp "ObservedTimestamp"
 
-static int append_metadata_observed_time(flb_log_event_encoder* encoder)
+static int append_metadata_observed_time(struct flb_log_event_encoder* encoder)
 {
     /* add_observed_time */
     struct flb_time observed_time;
