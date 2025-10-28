@@ -54,8 +54,6 @@
 
 #include <cfl/cfl.h>
 
-#define ObservedTimestamp "ObservedTimestamp"
-
 static int append_metadata_observed_time(struct flb_log_event_encoder* encoder)
 {
     /* add_observed_time */
@@ -63,7 +61,7 @@ static int append_metadata_observed_time(struct flb_log_event_encoder* encoder)
     flb_time_get(&observed_time);
 
     return flb_log_event_encoder_append_metadata_values(
-            &encoder,
+            encoder,
             FLB_LOG_EVENT_CSTRING_VALUE("ObservedTimestamp"),
             FLB_LOG_EVENT_UINT64_VALUE(flb_time_to_nanosec(&observed_time)));
 }
@@ -213,8 +211,9 @@ static int record_append_custom_keys(struct flb_tail_file *file,
         }
 
         /* add_observed_time */
-        if(ctx->add_observed_time && ret == FLB_EVENT_ENCODER_SUCCESS)
+        if(ctx->add_observed_time && ret == FLB_EVENT_ENCODER_SUCCESS) {
             ret = append_metadata_observed_time(&encoder);
+        }
 
         if (ret == FLB_EVENT_ENCODER_SUCCESS) {
             ret = flb_log_event_encoder_commit_record(&encoder);
@@ -339,8 +338,9 @@ int flb_tail_pack_line_map(struct flb_time *time, char **data,
     }
 
     /* add_observed_time */
-    if (file->config->add_observed_time && result == FLB_EVENT_ENCODER_SUCCESS)
+    if (file->config->add_observed_time && result == FLB_EVENT_ENCODER_SUCCESS) {
         result = append_metadata_observed_time(file->sl_log_event_encoder);
+    }
 
     if (result == FLB_EVENT_ENCODER_SUCCESS) {
         result = flb_log_event_encoder_commit_record(file->sl_log_event_encoder);
@@ -393,8 +393,9 @@ int flb_tail_file_pack_line(struct flb_time *time, char *data, size_t data_size,
     }
 
     /* add_observed_time */
-    if (file->config->add_observed_time && result == FLB_EVENT_ENCODER_SUCCESS)
+    if (file->config->add_observed_time && result == FLB_EVENT_ENCODER_SUCCESS) {
         result = append_metadata_observed_time(file->sl_log_event_encoder);
+    }
 
     if (result == FLB_EVENT_ENCODER_SUCCESS) {
         result = flb_log_event_encoder_append_body_values(
