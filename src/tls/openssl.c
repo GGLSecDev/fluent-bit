@@ -26,6 +26,8 @@
 #define OPENSSL_1_1_0 0x010100000L
 #define OPENSSL_3_0   0x030000000L
 
+#define ERR_BUF_HEADER_SIZE 36
+
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef FLB_USE_OPENSSL_STORE
@@ -1437,7 +1439,7 @@ static int tls_net_handshake(struct flb_tls *tls,
 {
     int ret = 0;
     long ssl_code = 0;
-    char err_buf[256];
+    char err_buf[ERR_BUF_HEADER_SIZE + 256] = "Failed to establish tls connection: ";
     struct tls_session *session = ptr_session;
     struct tls_context *ctx;
     const char *x509_err;
@@ -1520,10 +1522,28 @@ static int tls_net_handshake(struct flb_tls *tls,
                 }
                 else {
                     flb_error("[tls] error: unexpected EOF");
+                    if (ctx->verifier_ins &&
+                        ctx->verifier_ins->plugin &&
+                        ctx->verifier_ins->plugin->cb_connection_failure) {
+
+                        strncpy(&err_buf[ERR_BUF_HEADER_SIZE], "unexpected EOF", sizeof(err_buf)-ERR_BUF_HEADER_SIZE-1);
+                        ctx->verifier_ins
+                           ->plugin
+                           ->cb_connection_failure(ctx->verifier_ins, vhost, 0 /*port*/,
+                                -1, err_buf);
+                    }
                 }
             } else {
-                ERR_error_string_n(ret, err_buf, sizeof(err_buf)-1);
-                flb_error("[tls] error: %s", err_buf);
+                ERR_error_string_n(ret, &err_buf[ERR_BUF_HEADER_SIZE], sizeof(err_buf)-ERR_BUF_HEADER_SIZE-1);
+                flb_error("[tls] error: %s", &err_buf[ERR_BUF_HEADER_SIZE]);
+                if (ctx->verifier_ins &&
+                    ctx->verifier_ins->plugin &&
+                    ctx->verifier_ins->plugin->cb_connection_failure) {
+                    ctx->verifier_ins->plugin->cb_connection_failure(ctx->verifier_ins,
+                                                                     vhost,
+                                                                     0 /*port*/,
+                                                                     ret, err_buf);
+                }
             }
 
             pthread_mutex_unlock(&ctx->mutex);
