@@ -656,7 +656,6 @@ static int cb_bigquery_init(struct flb_output_instance *ins,
     char *token;
     int io_flags = FLB_IO_TLS;
     struct flb_bigquery *ctx;
-    const struct flb_network_verifier_instance *conn_ins = NULL;
 
     /* Create config context */
     ctx = flb_bigquery_conf_create(ins, config);
@@ -687,8 +686,6 @@ static int cb_bigquery_init(struct flb_output_instance *ins,
     }
 
     if (ctx->has_identity_federation) {
-        conn_ins = find_network_verifier_instance(config, ins->network_verifier);
-
         /* Configure AWS IMDS */
         ctx->aws_tls = flb_tls_create(FLB_TLS_CLIENT_MODE,
                                       FLB_TRUE,
@@ -700,7 +697,7 @@ static int cb_bigquery_init(struct flb_output_instance *ins,
                                       ins->tls_key_file,
                                       ins->tls_key_passwd,
                                       ins->tls_provider_query,
-                                      conn_ins);
+                                      ins->verifier_ins);
 
         if (!ctx->aws_tls) {
             flb_plg_error(ctx->ins, "Failed to create TLS context");
@@ -741,7 +738,7 @@ static int cb_bigquery_init(struct flb_output_instance *ins,
                                           ins->tls_key_file,
                                           ins->tls_key_passwd,
                                           ins->tls_provider_query,
-                                          conn_ins);
+                                          ins->verifier_ins);
 
         if (!ctx->aws_sts_tls) {
             flb_plg_error(ctx->ins, "Failed to create TLS context");
@@ -774,7 +771,7 @@ static int cb_bigquery_init(struct flb_output_instance *ins,
                                              ins->tls_key_file,
                                              ins->tls_key_passwd,
                                              ins->tls_provider_query,
-                                             conn_ins);
+                                             ins->verifier_ins);
 
         if (!ctx->google_sts_tls) {
             flb_plg_error(ctx->ins, "Failed to create TLS context");
@@ -804,7 +801,7 @@ static int cb_bigquery_init(struct flb_output_instance *ins,
                                              ins->tls_key_file,
                                              ins->tls_key_passwd,
                                              ins->tls_provider_query,
-                                             conn_ins);
+                                             ins->verifier_ins);
 
         if (!ctx->google_iam_tls) {
             flb_plg_error(ctx->ins, "Failed to create TLS context");
