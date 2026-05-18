@@ -1,3 +1,4 @@
+test
 # 🔒 Security Policy
 
 Fluent Bit maintains active security support for a limited set of release lines. Security updates are provided for the versions listed below until their End-of-Maintenance (EOM) dates.
