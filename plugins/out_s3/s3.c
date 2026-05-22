@@ -1997,6 +1997,8 @@ static int blob_initialize_authorization_endpoint_upstream(struct flb_s3 *contex
                                  NULL,
                                  NULL,
                                  NULL,
+                                 NULL,
+                                 NULL,
                                  NULL);
 
     flb_free(host);

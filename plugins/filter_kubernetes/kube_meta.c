@@ -2026,7 +2026,7 @@ int flb_kube_pod_association_init(struct flb_kube *ctx, struct flb_config *confi
                                                   ctx->aws_pod_association_host_server_ca_file,
                                                   ctx->aws_pod_association_host_client_cert_file,
                                                   ctx->aws_pod_association_host_client_key_file,
-                                                  NULL);
+                                                  NULL, NULL, NULL);
     if (!ctx->aws_pod_association_tls) {
         flb_plg_error(ctx->ins, "[kube_meta] could not create TLS config for pod association host");
         return -1;
